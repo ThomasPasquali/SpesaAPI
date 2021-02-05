@@ -5,16 +5,19 @@ const bcrypt = require('bcrypt')
 const fs = require('fs')
 const ini = require('ini')
 const misc = require('./misc')
-const { Cookie } = require('express-session')
+const io = require('./events')
+const cors = require('cors');
+//const { Cookie } = require('express-session')
 
 const app = express()
 const parsedIni = ini.parse(fs.readFileSync('./app.ini', 'utf-8'))
-const INI = parsedIni.backend
+const INI = parsedIni.api
 const INI_DEV = parsedIni.dev
 const LOGIN_EXCLUDED_URLS = ['/hash', '/']
 
 /*---------MIDDLEWARE---------*/
 
+app.use(cors())
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 
@@ -85,12 +88,15 @@ app.post('/', function (req, res) {
 });
 
 app.get(/\/.*/, (req, res) => misc.query(req, res))
+app.post(/\/.*/, (req, res) => misc.query(req, res))
+app.put(/\/.*/, (req, res) => misc.query(req, res))
 app.patch(/\/.*/, (req, res) => misc.query(req, res))
+app.delete(/\/.*/, (req, res) => misc.query(req, res))
 
 /*---------END API---------*/
 
 /***********SERVER START***********/
-process.setMaxListeners(10);
+process.setMaxListeners(1000);
 const server = app.listen(INI.port, () => {
-	console.log(`Express server listening on port ${INI.port}`)
+	console.log(`Express server listening on port ${INI.port}\r\n`)
 })

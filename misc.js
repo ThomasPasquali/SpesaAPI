@@ -10,10 +10,10 @@ const handleError = (err, res) => {
 
 const query = (req, res, thenCallback, catchCallback) => {
 	const action = req.originalUrl.split('?')[0]
-	const method = req.method.toUpperCase()
+	const method = req.method
 	const params = Object.assign(req.body??{}, req.query)
 
-	console.log('Serving ', method, action, params.password?'VOOOOLEVI SBIRCIARE LA PASSWORD...':params)
+	console.log('Serving ', method, action, params.password?'VOOOOLEVI SBIRCIARE LA PASSWORD...':params, '\r\n')
 
 	return db.query(method, action, params).then(data => {
 		if(thenCallback) thenCallback(data)
