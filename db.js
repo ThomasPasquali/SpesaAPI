@@ -20,12 +20,20 @@ const QUERY_MAP = {
 						JOIN oggetti o ON o.ID = ol.Oggetto
 						WHERE ol.Lista = :listid`,
 
-		'/shop_items': 'SELECT ID id, Nome nome, Note note, Prezzo prezzo FROM oggetti WHERE Supermercato = :shopid ORDER BY Nome ASC',
+		'/shop_items': 'SELECT ID id, Nome nome, Note note, Prezzo prezzo, Supermercato supermercato FROM oggetti WHERE Supermercato = :shopid ORDER BY Nome ASC',
 
 		'/list_item': `SELECT ol.Oggetto id, o.Nome nome, o.Note note, o.Prezzo prezzo, ol.Quantita quantita, ol.Acquirente acquirente
 						FROM oggetti_liste ol
 						JOIN oggetti o ON o.ID = ol.Oggetto
-						WHERE ol.Lista = :listid AND o.ID = :itemid`
+						WHERE ol.Lista = :listid AND o.ID = :itemid`,
+		
+		'/user_shops': `SELECT DISTINCT s.ID id, s.Nome nome, s.Localita localita, s.Citta citta
+						FROM gruppi_utenti gu 
+						JOIN gruppi_supermercati gs ON gs.Gruppo = gu.Gruppo 
+						JOIN supermercati s ON s.ID = gs.Supermercato 
+						WHERE gu.Utente = :username`,
+		
+		'/item': 'SELECT ID id, Nome nome, Note note, Prezzo prezzo, Supermercato supermercato FROM Oggetti WHERE ID = :itemid'
 	},
 
 	'POST': {
@@ -50,6 +58,20 @@ const QUERY_MAP = {
 					db.query('PATCH', '/quantity_list_item', params).then(res => resolve(res)).catch(err => reject(err));
 				else
 					reject(err)
+			}
+		},
+
+		'/item': {
+			sql: 'UPDATE oggetti SET ID = :id, Nome = :nome, Note = :note, Prezzo = :prezzo, Supermercato = :supermercato WHERE id = :id',
+			then: (params, res, resolve, reject) => {
+				if(res.affectedRows <= 0)
+					db.connection.query(
+						queryBuilder('INSERT INTO Oggetti (Nome, Note, Prezzo, Supermercato) VALUES (:nome, :note, :prezzo, :supermercato)', params),
+						(err, rows) => {
+							if (err) reject(err)
+							else db.query('GET', '/item', { itemid: rows.insertId }).then(res => resolve(res))
+						})
+				else resolve(res)
 			}
 		}
 	},
@@ -88,7 +110,9 @@ const QUERY_MAP = {
 				io.of('/').emit('removed_list_item', params)
 				resolve(res)
 			}
-		}
+		},
+
+		'/item': 'DELETE FROM oggetti WHERE ID = :itemid'
 	}
 
 }
