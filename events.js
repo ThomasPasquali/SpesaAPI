@@ -1,3 +1,4 @@
+require('dotenv').config()
 const fs = require('fs')
 const ini = require('ini')
 const INI = ini.parse(fs.readFileSync('./app.ini', 'utf-8'))['events']
@@ -13,8 +14,8 @@ const io = require('socket.io')(server, {
         allowedHeaders: '*'
     }
 })
-server.listen(INI.port)
-console.log(`Accepting event sockets on port ${INI.port} at ${INI.path}`)
+server.listen(process.env.EVENTS_PORT)
+console.log(`Accepting event sockets on port ${process.env.EVENTS_PORT} at ${INI.path}`)
 
 io.on('connection', socket => {
     console.log(`New event socket => ${socket.handshake.headers.origin} as ${socket.handshake.query.username} on ${socket.nsp.name}`, '\r\n')

@@ -37,9 +37,7 @@ const QUERY_MAP = {
 	},
 
 	'POST': {
-		'/': `SELECT Password, Ruolo, Preferenze FROM utenti WHERE Nome = :username`,
-
-		
+		'/login': `SELECT Password, Ruolo, Preferenze FROM utenti WHERE Nome = :username`,
 	},
 
 	'PUT': {
