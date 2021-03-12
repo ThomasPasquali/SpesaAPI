@@ -33,7 +33,24 @@ const QUERY_MAP = {
 						JOIN supermercati s ON s.ID = gs.Supermercato 
 						WHERE gu.Utente = :username`,
 		
-		'/item': 'SELECT ID id, Nome nome, Note note, Prezzo prezzo, Supermercato supermercato FROM Oggetti WHERE ID = :itemid'
+		'/item': 'SELECT ID id, Nome nome, Note note, Prezzo prezzo, Supermercato supermercato FROM Oggetti WHERE ID = :itemid',
+		
+		'/groups': `SELECT DISTINCT g.ID id, g.Nome nome
+					FROM gruppi g
+					JOIN gruppi_utenti gu ON gu.Gruppo = g.ID
+					WHERE gu.Utente = :username`,
+
+		'/shop_user_recipes': `SELECT r.ID id, r.Nome nome, r.Descrizione descrizione
+								FROM ricette r 
+								JOIN gruppi_utenti gu
+								JOIN gruppi_ricette gr ON gr.Gruppo = gu.Gruppo AND gr.Ricetta = r.ID 
+								WHERE gu.Utente = :username AND r.Supermercato = :shopid`,
+
+		'/recipe_items': `SELECT o.ID id, o.Nome nome, o.Note note, o.Prezzo prezzo, o_r.Quantita quantita
+							FROM ricette r 
+							JOIN oggetti_ricette o_r ON o_r.Ricetta = r.ID
+							JOIN oggetti o ON o.ID = o_r.Oggetto
+							WHERE r.ID = :recipeid`,
 	},
 
 	'POST': {
@@ -64,7 +81,7 @@ const QUERY_MAP = {
 			then: (params, res, resolve, reject) => {
 				if(res.affectedRows <= 0)
 					db.connection.query(
-						queryBuilder('INSERT INTO Oggetti (Nome, Note, Prezzo, Supermercato) VALUES (:nome, :note, :prezzo, :supermercato)', params),
+						queryBuilder('INSERT INTO oggetti (Nome, Note, Prezzo, Supermercato) VALUES (:nome, :note, :prezzo, :supermercato)', params),
 						(err, rows) => {
 							if (err) reject(err)
 							else db.query('GET', '/item', { itemid: rows.insertId }).then(res => resolve(res))

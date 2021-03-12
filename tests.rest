@@ -1,0 +1,26 @@
+POST http://127.0.0.1:1236/login HTTP/1.1
+content-type: application/json
+
+{
+    "username": "Thomas",
+    "password": "akaberga"
+}
+
+###
+
+POST http://127.0.0.1:1236/refreshtoken HTTP/1.1
+content-type: application/json
+
+{
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoiVGhvbWFzIiwicm9sZSI6IkFkbWluIiwicHJlZnMiOnsidHlwZSI6IkJ1ZmZlciIsImRhdGEiOlsxMjMsMTI1XX0sImlhdCI6MTYxNDQzNjE5NX0.ru1_4u4wb4HfJ6frHoAykJsMToT5NS3FTGkcoNqzncw"
+}
+
+###
+
+GET http://127.0.0.1:1234/user_lists HTTP/1.1
+authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoiVGhvbWFzIiwicm9sZSI6IkFkbWluIiwicHJlZnMiOnsidHlwZSI6IkJ1ZmZlciIsImRhdGEiOlsxMjMsMTI1XX0sImlhdCI6MTYxNDQzODU5NywiZXhwIjoxNjE0NDM4NjU3fQ.Taea3YYFhSATwBi1HoC4u3l81lLYNOY5xYscG2-8zxE
+content-type: application/json
+
+{
+    "username": "Thomas"
+}

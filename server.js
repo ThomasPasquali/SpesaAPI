@@ -7,45 +7,27 @@ const misc = require('./misc')
 const io = require('./events')
 const cors = require('cors');
 const jwt = require('jsonwebtoken')
-require('./auth.js')
+const auth = require('./auth.js')
 
 const app = express()
 const parsedIni = ini.parse(fs.readFileSync('./app.ini', 'utf-8'))
 const INI = parsedIni.api
 const INI_DEV = parsedIni.dev
-const LOGIN_EXCLUDED_URLS = ['/hash', '/']
 
 /*---------MIDDLEWARE---------*/
 
-app.use(cors())
-app.use(express.json())
-app.use(express.urlencoded({ extended: true }))
-
-function authenticateToken(req, res, next) {
-	const authHeader = req.headers['authorization']
-	const token = authHeader && authHeader.split(' ')[1]
-	if (token == null) return res.sendStatus(401)
-
-	if(!LOGIN_EXCLUDED_URLS.includes(req.originalUrl.split('?')[0]))
-		jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, user) => {
-			console.log(err)
-			if (err) return res.status(403).send({ message: 'Authentication required' })
-			req.user = user
-			res.setHeader('Content-Type', 'application/json')
-			next()
-		})
-	next()
-}
-
-app.use(authenticateToken)
-
 app.use((req, res, next) => {
-	console.log('Request from:', req.get('origin'), 'to', req.originalUrl);
+	//console.log('Request from:', req.get('origin'), 'to', req.originalUrl);
+	//console.log(req.headers)
 	next()
 	/*res.setHeader('Access-Control-Allow-Origin', req.get('origin')??'*')
 	res.setHeader('Access-Control-Allow-Headers', 'content-type')
 	res.setHeader('Access-Control-Allow-Credentials', 'true')*/
 })
+app.use(cors())
+app.use(express.json())
+app.use(express.urlencoded({ extended: true }))
+app.use(auth)
 
 /*---------END MIDDLEWARE---------*/
 
