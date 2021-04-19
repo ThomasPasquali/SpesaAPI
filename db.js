@@ -42,8 +42,7 @@ const QUERY_MAP = {
 
 		'/shop_user_recipes': `SELECT r.ID id, r.Nome nome, r.Descrizione descrizione
 								FROM ricette r 
-								JOIN gruppi_utenti gu
-								JOIN gruppi_ricette gr ON gr.Gruppo = gu.Gruppo AND gr.Ricetta = r.ID 
+								JOIN gruppi_utenti gu ON gu.Gruppo = r.Gruppo
 								WHERE gu.Utente = :username AND r.Supermercato = :shopid`,
 
 		'/recipe_items': `SELECT o.ID id, o.Nome nome, o.Note note, o.Prezzo prezzo, o_r.Quantita quantita
@@ -51,6 +50,7 @@ const QUERY_MAP = {
 							JOIN oggetti_ricette o_r ON o_r.Ricetta = r.ID
 							JOIN oggetti o ON o.ID = o_r.Oggetto
 							WHERE r.ID = :recipeid`,
+							
 	},
 
 	'POST': {
@@ -88,6 +88,45 @@ const QUERY_MAP = {
 						})
 				else resolve(res)
 			}
+		},
+
+		'/newList': {
+			sql: 'INSERT INTO liste(Nome, Gruppo, Supermercato) VALUES (:name, :group, :shopid)',
+			then: (params, res, resolve, reject) => {
+				db.connection.query('SELECT ID id FROM liste ORDER BY ID DESC LIMIT 1', (err, rows) => {
+					if (err) reject(err)
+					else resolve(rows[0].id)
+				})
+			}
+		},
+
+		'/list': (params, resolve) => {
+			db.query('PUT', '/newList', {name: params.listname, group: params.group.id, shopid: params.shopid}).then(listid => {
+				let promises = []
+				for(item of params.items)
+					promises.push(db.query('PUT', '/list_item', { itemid: item.id, listid, quantity: item.quantita }))
+				console.log(Promise.all(promises))
+				resolve({listid})
+			})
+			
+		},
+
+		'/recipe': {
+			sql: 'INSERT INTO ricette(Nome, Descrizione, Supermercato, Gruppo) VALUES (:name, :description, :shopid, :groupid)',
+			then: (params, res, resolve, reject) => {
+				db.connection.query('SELECT ID id FROM ricette ORDER BY ID DESC LIMIT 1', (err, rows) => {
+					if (err) reject(err)
+					else resolve({recipeid: rows[0].id})
+				})
+			}
+		},
+
+		'/recipe_item': {
+			sql: 'INSERT INTO oggetti_ricette(Oggetto, Ricetta, Supermercato) VALUES (:itemid, :recipeid, (SELECT Supermercato FROM ricette WHERE ID = :recipeid))',
+			catch: (params, err, resolve, reject) => {
+				if(err.errno === 1062) //Duplicate PK
+					db.query('PATCH', '/quantity_recipe_item', params).then(res => resolve(res)).catch(err => reject(err));
+			}
 		}
 	},
 
@@ -103,6 +142,7 @@ const QUERY_MAP = {
 				resolve(rows)
 			}
 		},
+
 		'/quantity_list_item': {
 			sql: `	UPDATE oggetti_liste
 					SET Quantita = Quantita + :quantity
@@ -114,7 +154,9 @@ const QUERY_MAP = {
 				}).catch(err => reject(err));
 				resolve(res)
 			}
-		}
+		},
+
+		'/quantity_recipe_item': 'UPDATE oggetti_ricette SET Quantita = Quantita + 1 WHERE Oggetto = :itemid AND Ricetta = :recipeid',
 	},
 
 	'DELETE': {
@@ -127,7 +169,11 @@ const QUERY_MAP = {
 			}
 		},
 
-		'/item': 'DELETE FROM oggetti WHERE ID = :itemid'
+		'/item': 'DELETE FROM oggetti WHERE ID = :itemid',
+
+		'/recipe': 'DELETE FROM oggetti_ricette WHERE Ricetta = :recipeid; DELETE FROM ricette WHERE ID = :recipeid', 
+
+		'/recipe_item': 'DELETE FROM oggetti_ricette WHERE Ricetta = :recipeid AND Oggetto = :itemid',
 	}
 
 }
@@ -152,6 +198,9 @@ class Database {
 
 		if (!query) return new Promise((resolve, reject) => resolve({ message: 'Action not found' }))
 		const sql = query.sql ?? query
+
+		if(typeof query === 'function')
+			return new Promise((resolve, reject) => query(params, resolve, reject))
 
 		let paramsNames = [], tmp = []
 		while ((tmp = PLACEHOLDRES_REGEX.exec(sql)) !== null) paramsNames.push(tmp[0].substr(1));
